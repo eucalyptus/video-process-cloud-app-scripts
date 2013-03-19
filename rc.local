@@ -1,0 +1,36 @@
+#!/bin/sh 
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+# load pci hotplug for dynamic disk attach in KVM (for EBS)
+depmod -a
+modprobe acpiphp
+
+# simple attempt to get the user ssh key using the meta-data service
+mkdir -p /root/.ssh
+echo >> /root/.ssh/authorized_keys
+curl -m 10 -s http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key | grep 'ssh-rsa' >> /root/.ssh/authorized_keys
+echo "AUTHORIZED_KEYS:"
+echo "************************"
+cat /root/.ssh/authorized_keys
+echo "************************"
+
+# run whatami.pl script that receives input via the user-data service
+#touch /home/renderer/user-data.txt
+#curl -m 60 -s http://169.254.169.254/latest/user-data >> /home/renderer/user-data.txt
+
+cd /home/renderer
+echo "RUNNING /home/renderer/whatami.pl"
+/usr/bin/perl ./whatami.pl > ./whatami.out 2> ./whatami.err &
+
+exit 0
+
